@@ -22,6 +22,7 @@ class UploaderComponent extends React.Component<Props,State> {
   state: State = {
     fileValue: "",
     file: {}
+    
   }
 
   onChooseFile = (e: React.ChangeEvent<HTMLInputElement>) => {
