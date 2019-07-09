@@ -1,28 +1,30 @@
 import React , {Fragment, createRef, RefObject} from 'react';
 import {Input , Button} from 'semantic-ui-react'
 
+import * as Api from '../../utils/Api'
+import {URL_LOCAL} from '../../constants'
 import './Uploader.css'
 
 interface Props {}
 interface State {
   fileValue: string;
-  file: {};
+  file: any;
 }
 
 class UploaderComponent extends React.Component<Props,State> {
 
-  private chooseFile:RefObject<HTMLInputElement> = createRef<HTMLInputElement>()
-  private fileTextField:RefObject<Input> = createRef<Input>()
+  private chooseFile:RefObject<HTMLInputElement>
+  private fileTextField:RefObject<Input>
 
   constructor(props:Props){
     super(props)
-    console.log("constructor")
+    this.chooseFile = createRef<HTMLInputElement>()
+    this.fileTextField = createRef<Input>()
   }
 
   state: State = {
     fileValue: "",
-    file: {}
-    
+    file: null
   }
 
   onChooseFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,15 +33,9 @@ class UploaderComponent extends React.Component<Props,State> {
     const file = e.target.files ? e.target.files[0] : null
 
     if(file){
-      const form = new FormData()
-      form.append("1",file)
       console.log("name: ",file.name)
       console.log("file: ",file)
-      this.setState({fileValue:file.name,file},()=>{
-        console.log("new state",this.state)
-        const xx = Object.assign({},this.state.file)
-        console.log(Object.keys(xx))
-      })
+      this.setState({fileValue:file.name,file:file})
     }
   }
 
@@ -50,8 +46,9 @@ class UploaderComponent extends React.Component<Props,State> {
   }
 
   validateFile = (file: any)=> {
+    console.log(file)
     return new Promise<string>((resolve,reject)=> {
-      if(Object.keys(file).length === 0){
+      if(!file){
         reject("please choose file")
       }
   
@@ -75,17 +72,28 @@ class UploaderComponent extends React.Component<Props,State> {
     if(message){
       console.log(message)
     }
-
-    // const form = new FormData()
-    // form.append(this.state.file)
-    // fetch("http://xxx",{
-    //   method: "POST",
-    //   body: form
-    // })
+    const form = new FormData()
+    form.append("file",this.state.file)
+    const config = {
+      headers: {
+        'content-type': 'multipart/form-data'
+      },
+      onUploadProgress: (ProgressEvent:any) => {
+        console.log("Progress: ", ProgressEvent.loaded)
+        console.log(ProgressEvent.total)
+      }
+    }
+    Api.post(URL_LOCAL,form,config)
+      .then((result:any)=>{
+        console.log("results: ",result)
+      })
+      .catch((err:any)=>{
+        console.log("Error:",err)
+      })
   }
 
   reset = () => {
-    this.setState({fileValue:""})
+    this.setState({fileValue:"",file:null})
   }
 
 
