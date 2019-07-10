@@ -2,8 +2,6 @@ import React from 'react';
 import UploaderComponent from './components/uploader/Uploader'
 import './App.css';
 
-
-
 interface Props {}
 interface State {}
 

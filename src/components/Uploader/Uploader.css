@@ -29,3 +29,7 @@
 .inputfile + label {
 	cursor: pointer;
 } 
+
+.Toaster__alert {
+    background-color: #CCE5FF;
+}

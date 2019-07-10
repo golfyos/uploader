@@ -1,14 +1,20 @@
 import React , {Fragment, createRef, RefObject} from 'react';
-import {Input , Button} from 'semantic-ui-react'
+import {Input , Button, Progress} from 'semantic-ui-react'
+import 'toasted-notes/src/styles.css';
+import {alert as toast} from '../../utils/Alert'
 
 import * as Api from '../../utils/Api'
-import {URL_LOCAL} from '../../constants'
+import {UPLOAD_URL} from '../../constants'
 import './Uploader.css'
 
 interface Props {}
 interface State {
   fileValue: string;
   file: any;
+  percent: any;
+  success: boolean;
+  error:boolean;
+  isUploading: boolean;
 }
 
 class UploaderComponent extends React.Component<Props,State> {
@@ -24,18 +30,26 @@ class UploaderComponent extends React.Component<Props,State> {
 
   state: State = {
     fileValue: "",
-    file: null
+    file: null,
+    percent:0,
+    success:false,
+    error:false,
+    isUploading: false
   }
 
   onChooseFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log(e.target.files)
+    // console.log(e.target.files)
     
     const file = e.target.files ? e.target.files[0] : null
 
     if(file){
-      console.log("name: ",file.name)
-      console.log("file: ",file)
-      this.setState({fileValue:file.name,file:file})
+      // console.log("name: ",file.name)
+      // console.log("file: ",file)
+      this.setState({
+        fileValue:file.name,
+        file:file,
+        isUploading:false
+      })
     }
   }
 
@@ -46,7 +60,7 @@ class UploaderComponent extends React.Component<Props,State> {
   }
 
   validateFile = (file: any)=> {
-    console.log(file)
+    // console.log(file)
     return new Promise<string>((resolve,reject)=> {
       if(!file){
         reject("please choose file")
@@ -68,10 +82,13 @@ class UploaderComponent extends React.Component<Props,State> {
   }
 
   upload = async () => {
-    const message = await this.validateFile(this.state.file).catch((err)=>{console.log(err)})
-    if(message){
-      console.log(message)
+    try{
+      const message = await this.validateFile(this.state.file)
+    }catch(err){
+      console.log(err)
+      return ;
     }
+    this.setState({isUploading:true})
     const form = new FormData()
     form.append("file",this.state.file)
     const config = {
@@ -79,25 +96,44 @@ class UploaderComponent extends React.Component<Props,State> {
         'content-type': 'multipart/form-data'
       },
       onUploadProgress: (ProgressEvent:any) => {
-        console.log("Progress: ", ProgressEvent.loaded)
-        console.log(ProgressEvent.total)
+        // console.log("Progress: ", ProgressEvent.loaded)
+        // console.log(ProgressEvent.total)
+        this.setState({percent:(ProgressEvent.loaded / ProgressEvent.total*100)})
       }
     }
-    Api.post(URL_LOCAL,form,config)
+    Api.post(UPLOAD_URL,form,config)
       .then((result:any)=>{
-        console.log("results: ",result)
+        // console.log("results: ",result)
+        toast("Uploaded Successfully")
+        this.setState({success:true})
+        setTimeout(()=>this.reset(),5000)
       })
       .catch((err:any)=>{
         console.log("Error:",err)
+        this.setState({error:true})
+        toast("Upload Error")
+        setTimeout(()=>this.reset(),2000)
       })
   }
 
   reset = () => {
-    this.setState({fileValue:"",file:null})
+    if(this.chooseFile.current){
+      this.chooseFile.current.value = ""
+    }
+    this.setState({
+      fileValue:"",
+      file:null,
+      isUploading:false,
+      success:false,
+      error:false,
+      percent:0
+    })
   }
 
 
   render(){
+    const {isUploading,percent} = this.state
+    // console.log("filename render",this.state.fileValue)
     return (
       <Fragment>
           <h2 className="ui header">
@@ -112,7 +148,15 @@ class UploaderComponent extends React.Component<Props,State> {
               <Button onClick={this.upload} content="Upload" primary/>
               <Button onClick={this.reset} content="Clear" secondary/>
             </div>
-          </div>
+            { isUploading  && <Progress
+              style={{marginTop:"1em"}}
+              percent={Math.round(percent)}
+              indicating
+              progress
+              success={this.state.success}
+              error={this.state.error}
+            />  }
+          </div> 
       </Fragment>
     )
   }
